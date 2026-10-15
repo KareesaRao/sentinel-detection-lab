@@ -30,6 +30,13 @@ simple string matching and quick log review.
 process and the user, look for related alerts on the same host, and isolate
 the host if the activity is not authorized.
 
+### Automated response
+
+A Logic Apps playbook (`playbook-incident-comment`) runs on Sentinel
+incidents and adds a triage comment with the incident title and severity.
+It uses a system-assigned managed identity with the Microsoft Sentinel
+Responder role, so no credentials are stored. I ran it manually on an
+incident and confirmed the comment appears in the incident's activity log.
 **Tuning note:** Admin scripts and management tools also use encoded
 commands, so a real deployment needs exclusions for known parent processes
 and paths.
