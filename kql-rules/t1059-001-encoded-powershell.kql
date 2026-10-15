@@ -1,0 +1,11 @@
+// Name: Encoded PowerShell execution
+// Tactic: Execution
+// Technique: T1059.001
+// Data source: Sysmon Event ID 1 (Event table)
+// Severity: High
+// Notes: Add exclusions for known admin scripts after tuning.
+Event
+| where Source == "Microsoft-Windows-Sysmon" and EventID == 1
+| where RenderedDescription has "powershell"
+| where RenderedDescription has_any ("-EncodedCommand", "-enc")
+| project TimeGenerated, Computer, RenderedDescription
