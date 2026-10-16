@@ -20,7 +20,7 @@ A personal lab where I built six custom Microsoft Sentinel analytics rules mappe
 - **Time to alert:** about 12 minutes in one example (first activity 2:44 PM ET, alert 2:55 PM ET). That includes the rule schedule, ingestion and portal sync. I have not broken down how much each part contributed.
 - **Tuning (two rules only):** in my lab test, 8 of 8 benign admin events stopped being flagged while both simulated attacks were still caught. See [Tuning](#tuning-and-its-limits) for the caveats.
 
-![Incident list showing the six verification incidents](screenshots/incident-list.png)
+![Incident list showing the six verification incidents](screenshots/Incident%20Logs.png)
 
 ## Architecture
 
@@ -93,7 +93,7 @@ After deploying all six rules, I ran a harmless admin batch first, then the atta
 - 22:10:27 UTC: `powershell.exe -NoProfile -EncodedCommand ...`. Incident #18.
 - 22:10:28 UTC: `schtasks /create /tn LabEvil2 ...`. Incident #17.
 
-![Raw log evidence for incidents 17 and 18](screenshots/logs-evidence.png)
+![KQL query evidence](screenshots/KQL.png)
 
 ## Workbook
 
