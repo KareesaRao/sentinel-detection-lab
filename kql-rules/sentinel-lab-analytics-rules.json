@@ -1,0 +1,336 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspaceName": {
+      "type": "string",
+      "defaultValue": "law-sentinel-lab"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus"
+    }
+  },
+  "variables": {
+    "ruleEncodedPs": "[guid(resourceGroup().id, 'lab-t1059-001-encoded-powershell')]",
+    "ruleSchtasks": "[guid(resourceGroup().id, 'lab-t1053-005-scheduled-task')]",
+    "ruleRunKey": "[guid(resourceGroup().id, 'lab-t1547-001-run-key')]",
+    "ruleBruteForce": "[guid(resourceGroup().id, 'lab-t1110-brute-force')]",
+    "ruleAccountDisc": "[guid(resourceGroup().id, 'lab-t1087-account-discovery')]",
+    "ruleLogClear": "[guid(resourceGroup().id, 'lab-t1070-001-log-cleared')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleEncodedPs'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Encoded PowerShell execution (T1059.001)",
+        "description": "Detects PowerShell started with an encoded command. Excludes parent commands run from C:\\AdminScripts (tuned).",
+        "severity": "High",
+        "enabled": true,
+        "query": "Event\n| where Source == \"Microsoft-Windows-Sysmon\" and EventID == 1\n| extend Image = extract(@'<Data Name=\"Image\">([^<]*)</Data>', 1, EventData),\n         CommandLine = extract(@'<Data Name=\"CommandLine\">([^<]*)</Data>', 1, EventData),\n         ParentCmd = extract(@'<Data Name=\"ParentCommandLine\">([^<]*)</Data>', 1, EventData)\n| where Image endswith @\"\\powershell.exe\" and CommandLine has_any (\"-EncodedCommand\", \"-enc\")\n| where ParentCmd !contains @\"C:\\AdminScripts\\\"\n| project TimeGenerated, Computer, Image, CommandLine, ParentCmd",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Execution"
+        ],
+        "techniques": [
+          "T1059"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleSchtasks'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Scheduled task created (T1053.005)",
+        "description": "Detects schtasks.exe creating a task. Excludes tasks that run scripts from C:\\AdminScripts (tuned).",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "Event\n| where Source == \"Microsoft-Windows-Sysmon\" and EventID == 1\n| extend Image = extract(@'<Data Name=\"Image\">([^<]*)</Data>', 1, EventData),\n         CommandLine = extract(@'<Data Name=\"CommandLine\">([^<]*)</Data>', 1, EventData),\n         ParentCmd = extract(@'<Data Name=\"ParentCommandLine\">([^<]*)</Data>', 1, EventData)\n| where Image endswith @\"\\schtasks.exe\" and CommandLine contains \"/create\"\n| where CommandLine !contains @\"C:\\AdminScripts\\\"\n| project TimeGenerated, Computer, Image, CommandLine, ParentCmd",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Persistence"
+        ],
+        "techniques": [
+          "T1053"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleRunKey'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Registry run key set (T1547.001)",
+        "description": "Detects a value written under a CurrentVersion Run key, using Sysmon registry events.",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "Event\n| where Source == \"Microsoft-Windows-Sysmon\" and EventID == 13\n| where RenderedDescription contains \"CurrentVersion\\\\Run\"\n| project TimeGenerated, Computer, RenderedDescription",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Persistence"
+        ],
+        "techniques": [
+          "T1547"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleBruteForce'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Repeated failed logons (T1110)",
+        "description": "Detects 5 or more failed logons (Event 4625) for the same account on a host within the lookback window.",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "SecurityEvent\n| where EventID == 4625\n| summarize Failures = count(), LastSeen = max(TimeGenerated) by Computer, TargetUserName, IpAddress\n| where Failures >= 5\n| project TimeGenerated = LastSeen, Computer, TargetUserName, IpAddress, Failures",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "CredentialAccess"
+        ],
+        "techniques": [
+          "T1110"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleAccountDisc'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Account discovery commands (T1087)",
+        "description": "Detects net user, net localgroup, and whoami /all style discovery, using Sysmon process creation events.",
+        "severity": "Low",
+        "enabled": true,
+        "query": "Event\n| where Source == \"Microsoft-Windows-Sysmon\" and EventID == 1\n| extend Image = extract(@'<Data Name=\"Image\">([^<]*)</Data>', 1, EventData),\n         CommandLine = extract(@'<Data Name=\"CommandLine\">([^<]*)</Data>', 1, EventData),\n         ParentCmd = extract(@'<Data Name=\"ParentCommandLine\">([^<]*)</Data>', 1, EventData)\n| where ((Image endswith @\"\\net.exe\" or Image endswith @\"\\net1.exe\") and CommandLine has_any (\"user\", \"localgroup\", \"group\"))\n    or (Image endswith @\"\\whoami.exe\" and CommandLine has \"/all\")\n| project TimeGenerated, Computer, Image, CommandLine, ParentCmd",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "Discovery"
+        ],
+        "techniques": [
+          "T1087"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', variables('ruleLogClear'))]",
+      "kind": "Scheduled",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Lab - Security log cleared (T1070.001)",
+        "description": "Detects the Windows Security event log being cleared (Event 1102).",
+        "severity": "High",
+        "enabled": true,
+        "query": "SecurityEvent\n| where EventID == 1102\n| project TimeGenerated, Computer, Account, Activity",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT10M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "DefenseEvasion"
+        ],
+        "techniques": [
+          "T1070"
+        ],
+        "eventGroupingSettings": {
+          "aggregationKind": "SingleAlert"
+        },
+        "entityMappings": [
+          {
+            "entityType": "Host",
+            "fieldMappings": [
+              {
+                "identifier": "HostName",
+                "columnName": "Computer"
+              }
+            ]
+          }
+        ],
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": true,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+// Rule: Lab - Registry run key set (T1547.001)
+// Severity: Medium
+// MITRE technique: T1547
+// Tactic: Persistence
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+Event
+| where Source == "Microsoft-Windows-Sysmon" and EventID == 13
+| where RenderedDescription contains "CurrentVersion\\Run"
+| project TimeGenerated, Computer, RenderedDescription

@@ -1,0 +1,18 @@
+// Rule: Lab - Account discovery commands (T1087)
+// Severity: Low
+// MITRE technique: T1087
+// Tactic: Discovery
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+Event
+| where Source == "Microsoft-Windows-Sysmon" and EventID == 1
+| extend Image = extract(@'<Data Name="Image">([^<]*)</Data>', 1, EventData),
+         CommandLine = extract(@'<Data Name="CommandLine">([^<]*)</Data>', 1, EventData),
+         ParentCmd = extract(@'<Data Name="ParentCommandLine">([^<]*)</Data>', 1, EventData)
+| where ((Image endswith @"
+et.exe" or Image endswith @"
+et1.exe") and CommandLine has_any ("user", "localgroup", "group"))
+    or (Image endswith @"\whoami.exe" and CommandLine has "/all")
+| project TimeGenerated, Computer, Image, CommandLine, ParentCmd

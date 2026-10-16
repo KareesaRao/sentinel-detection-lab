@@ -1,0 +1,7 @@
+filename,display_name,severity,mitre_technique,tactic,schedule,lookback,data_source,description
+01-encoded-powershell-t1059-001.kql,Lab - Encoded PowerShell execution (T1059.001),High,T1059,Execution,PT5M,PT10M,Event (Sysmon Event ID 1),Detects PowerShell started with an encoded command. Excludes parent commands run from C:\AdminScripts (tuned).
+02-scheduled-task-t1053-005.kql,Lab - Scheduled task created (T1053.005),Medium,T1053,Persistence,PT5M,PT10M,Event (Sysmon Event ID 1),Detects schtasks.exe creating a task. Excludes tasks that run scripts from C:\AdminScripts (tuned).
+03-registry-run-key-t1547-001.kql,Lab - Registry run key set (T1547.001),Medium,T1547,Persistence,PT5M,PT10M,Event (Sysmon Event ID 13),"Detects a value written under a CurrentVersion Run key, using Sysmon registry events."
+04-repeated-failed-logons-t1110.kql,Lab - Repeated failed logons (T1110),Medium,T1110,CredentialAccess,PT5M,PT10M,SecurityEvent (Event ID 4625),Detects 5 or more failed logons (Event 4625) for the same account on a host within the lookback window.
+05-account-discovery-t1087.kql,Lab - Account discovery commands (T1087),Low,T1087,Discovery,PT5M,PT10M,Event (Sysmon Event ID 1),"Detects net user, net localgroup, and whoami /all style discovery, using Sysmon process creation events."
+06-security-log-cleared-t1070-001.kql,Lab - Security log cleared (T1070.001),High,T1070,DefenseEvasion,PT5M,PT10M,SecurityEvent (Event ID 1102),Detects the Windows Security event log being cleared (Event 1102).

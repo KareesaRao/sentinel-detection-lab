@@ -1,0 +1,16 @@
+// Rule: Lab - Scheduled task created (T1053.005)
+// Severity: Medium
+// MITRE technique: T1053
+// Tactic: Persistence
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+Event
+| where Source == "Microsoft-Windows-Sysmon" and EventID == 1
+| extend Image = extract(@'<Data Name="Image">([^<]*)</Data>', 1, EventData),
+         CommandLine = extract(@'<Data Name="CommandLine">([^<]*)</Data>', 1, EventData),
+         ParentCmd = extract(@'<Data Name="ParentCommandLine">([^<]*)</Data>', 1, EventData)
+| where Image endswith @"\schtasks.exe" and CommandLine contains "/create"
+| where CommandLine !contains @"C:\AdminScripts\"
+| project TimeGenerated, Computer, Image, CommandLine, ParentCmd

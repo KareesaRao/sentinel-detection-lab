@@ -1,0 +1,16 @@
+// Rule: Lab - Encoded PowerShell execution (T1059.001)
+// Severity: High
+// MITRE technique: T1059
+// Tactic: Execution
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+Event
+| where Source == "Microsoft-Windows-Sysmon" and EventID == 1
+| extend Image = extract(@'<Data Name="Image">([^<]*)</Data>', 1, EventData),
+         CommandLine = extract(@'<Data Name="CommandLine">([^<]*)</Data>', 1, EventData),
+         ParentCmd = extract(@'<Data Name="ParentCommandLine">([^<]*)</Data>', 1, EventData)
+| where Image endswith @"\powershell.exe" and CommandLine has_any ("-EncodedCommand", "-enc")
+| where ParentCmd !contains @"C:\AdminScripts\"
+| project TimeGenerated, Computer, Image, CommandLine, ParentCmd

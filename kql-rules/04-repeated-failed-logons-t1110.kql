@@ -1,0 +1,13 @@
+// Rule: Lab - Repeated failed logons (T1110)
+// Severity: Medium
+// MITRE technique: T1110
+// Tactic: CredentialAccess
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+SecurityEvent
+| where EventID == 4625
+| summarize Failures = count(), LastSeen = max(TimeGenerated) by Computer, TargetUserName, IpAddress
+| where Failures >= 5
+| project TimeGenerated = LastSeen, Computer, TargetUserName, IpAddress, Failures

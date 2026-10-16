@@ -1,0 +1,11 @@
+// Rule: Lab - Security log cleared (T1070.001)
+// Severity: High
+// MITRE technique: T1070
+// Tactic: DefenseEvasion
+// Schedule: every PT5M with lookback PT10M
+// Source: extracted from the uploaded ARM template.
+// Note: query is kept aligned with the ARM template; validate against your workspace schema and test telemetry before production use.
+
+SecurityEvent
+| where EventID == 1102
+| project TimeGenerated, Computer, Account, Activity
